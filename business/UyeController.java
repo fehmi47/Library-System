@@ -23,7 +23,7 @@ public class UyeController {
 
     public boolean update(Uye uye){
         if ( this.getByID(uye.getID())==null){
-            Helper.showMsg(uye.getID() + " ID kayırlı kişi bulunamadı");
+            Helper.showMsg(uye.getID() + " ID kayıtlı kişi bulunamadı");
             return false;
         }
         return this.uyeDao.update(uye);
@@ -35,5 +35,18 @@ public class UyeController {
             return false;
         }
         return this.uyeDao.delete(id);
+    }
+
+    public ArrayList<Uye> filter(String name){
+        String query = "SELECT * FROM uye";
+        ArrayList<String> whereList = new ArrayList<>();
+        if(name.length() > 0){
+            whereList.add("ad LIKE '%" + name +"%'");
+        }
+        if(whereList.size() > 0 ){
+            String whereQuery = String.join(" AND ",whereList);
+            query += " WHERE " + whereQuery;
+        }
+        return this.uyeDao.query(query);
     }
 }

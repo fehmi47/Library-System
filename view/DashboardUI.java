@@ -10,7 +10,6 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
-import java.util.Objects;
 
 public class DashboardUI extends JFrame {
     private JPanel container;
@@ -58,6 +57,8 @@ public class DashboardUI extends JFrame {
         loadUyeTable(null);
         loadUyePopupMenu();
         loadUyeButtonEvent();
+
+
     }
 
     private void loadUyeButtonEvent(){
@@ -69,6 +70,19 @@ public class DashboardUI extends JFrame {
                     loadUyeTable(null);
                 }
             });
+
+        });
+
+        btn_uyeler_filter.addActionListener(e -> {
+            ArrayList<Uye> filteredUyeler = this.uyeController.filter(
+                    this.fld_f_uyeler_ad.getText()
+            );
+            loadUyeTable(filteredUyeler);
+        });
+
+        btn_uyeler_filter_reset.addActionListener(e -> {
+            loadUyeTable(null);
+            this.fld_f_uyeler_ad.setText(null);
         });
     }
 

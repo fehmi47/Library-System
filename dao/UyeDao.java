@@ -10,6 +10,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 
 public class UyeDao {
+
     private Connection connection;
 
     public UyeDao(){
@@ -106,7 +107,18 @@ public class UyeDao {
         return true;
     }
 
-
+    public  ArrayList<Uye> query(String query){
+       ArrayList<Uye> uyeler = new ArrayList<>();
+        try {
+            ResultSet rs = this.connection.createStatement().executeQuery(query);
+            while (rs.next()){
+                uyeler.add(this.match(rs));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return uyeler;
+    }
     public Uye match (ResultSet rs) throws SQLException {
         Uye uye = new Uye();
         uye.setID((rs.getInt("ID")));
