@@ -37,11 +37,14 @@ public class UyeController {
         return this.uyeDao.delete(id);
     }
 
-    public ArrayList<Uye> filter(String name){
+    public ArrayList<Uye> filter(String name, String surname){
         String query = "SELECT * FROM uye";
         ArrayList<String> whereList = new ArrayList<>();
         if(name.length() > 0){
             whereList.add("ad LIKE '%" + name +"%'");
+        }
+        if(surname.length() > 0){
+            whereList.add("soyad LIKE '%" + surname +"%'");
         }
         if(whereList.size() > 0 ){
             String whereQuery = String.join(" AND ",whereList);
