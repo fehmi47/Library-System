@@ -30,7 +30,8 @@ public class Kategori {
     @JsonProperty("ad")
     private String ad;
 
-    @OneToMany(mappedBy = "kategori", cascade = CascadeType.ALL, fetch = FetchType.LAZY) private List<Kitap> kitaplar = new ArrayList<>();
+    @OneToMany(mappedBy = "kategori", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Kitap> kitaplar = new ArrayList<>();
     @JsonIgnore
     public String getAd() {
         return ad;

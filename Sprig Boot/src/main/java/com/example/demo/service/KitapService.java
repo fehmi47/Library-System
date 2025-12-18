@@ -37,6 +37,7 @@ public class KitapService {
         mevcutKitap.setAd(yeniKitap.getAd());
         mevcutKitap.setAdet(yeniKitap.getAdet());
         mevcutKitap.setKategori(yeniKitap.getKategori());
+        mevcutKitap.setYazar(yeniKitap.getYazar());
         mevcutKitap.setSayfaSayisi(yeniKitap.getSayfaSayisi());
         mevcutKitap.setYayinTarihi(yeniKitap.getYayinTarihi());
 

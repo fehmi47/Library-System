@@ -37,14 +37,9 @@ public class Kitap {
     @JoinColumn(name = "kategoriID", nullable = false)
     private Kategori kategori;
 
-    // --------- YAZARLAR (N:M) ---------
-    @ManyToMany
-    @JoinTable(
-            name = "KITAP_YAZAR",
-            joinColumns = @JoinColumn(name = "kitapID"),
-            inverseJoinColumns = @JoinColumn(name = "yazarID")
-    )
-    private List<Yazar> yazarlar = new ArrayList<>();
+    @ManyToOne
+    @JoinColumn(name  = "yazarID",nullable = false)
+    private Yazar yazar;
 
     // --------- EMANETLER (1:N) ---------
     @OneToMany(mappedBy = "kitap", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
@@ -88,5 +83,13 @@ public class Kitap {
 
     public void setKategori(Kategori kategori) {
         this.kategori = kategori;
+    }
+
+    public Yazar getYazar() {
+        return yazar;
+    }
+
+    public void setYazar(Yazar yazar) {
+        this.yazar = yazar;
     }
 }

@@ -25,7 +25,7 @@ public class Yazar {
     @Column(name = "soyad", length = 100, nullable = false)
     private String soyad; // Yazar soyadı
 
-    @ManyToMany(mappedBy = "yazarlar")
+    @OneToMany(mappedBy = "yazar", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Kitap> kitaplar = new ArrayList<>();
 
     public String getSoyad() {

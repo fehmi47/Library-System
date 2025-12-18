@@ -56,4 +56,40 @@ public class Uye {
             throw new IllegalArgumentException("Şifre boş olamaz");
         }
     }
+
+    public String getAd() {
+        return ad;
+    }
+
+    public void setAd(String ad) {
+        this.ad = ad;
+    }
+
+    public String getSoyad() {
+        return soyad;
+    }
+
+    public void setSoyad(String soyad) {
+        this.soyad = soyad;
+    }
+
+    public String getTelefonNo() {
+        return telefonNo;
+    }
+
+    public void setTelefonNo(String telefonNo) {
+        this.telefonNo = telefonNo;
+    }
+
+    public void setEposta(String eposta) {
+        this.eposta = eposta;
+    }
+
+    public Cinsiyet getCinsiyet() {
+        return cinsiyet;
+    }
+
+    public void setCinsiyet(Cinsiyet cinsiyet) {
+        this.cinsiyet = cinsiyet;
+    }
 }
