@@ -2,6 +2,9 @@ package com.example.demo.entity;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -39,6 +42,7 @@ public class Uye {
     private Cinsiyet cinsiyet = Cinsiyet.B;
 
     @OneToMany(mappedBy = "uye", fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Emanet> emanetler = new ArrayList<>();
 
     public String getSifre() {

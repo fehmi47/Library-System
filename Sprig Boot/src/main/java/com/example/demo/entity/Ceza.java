@@ -24,28 +24,23 @@ public class Ceza {
     @Column(name = "ID")
     private Integer id;
 
-    // --------- EMANET İLİŞKİSİ ---------
     @OneToOne
     @JoinColumn(name = "emanetID",referencedColumnName = "ID", nullable = false)
     private Emanet emanet;
 
-    // --------- CEZA MİKTARI ---------
     @Column(name = "cezaMiktari", nullable = false, precision = 10, scale = 2)
     private BigDecimal cezaMiktari;
 
-    // --------- CEZA TARİHİ ---------
     @Column(name = "cezaTarihi", nullable = false)
     private LocalDate cezaTarihi;
 
-    // --------- ÖDEME TARİHİ ---------
     @Column(name = "odemeTarihi")
     private LocalDate odemeTarihi;
 
-    // --------- DURUM ---------
+
     @Column(name = "durum", nullable = false, length = 20)
     private String durum = "Ödenmedi";
 
-    // --------- DEFAULT DATE ---------
     @PrePersist
     public void prePersist() {
         if (cezaTarihi == null) {
@@ -53,6 +48,45 @@ public class Ceza {
         }
     }
 
-    
+    public Emanet getEmanet() {
+        return emanet;
+    }
+
+    public void setEmanet(Emanet emanet) {
+        this.emanet = emanet;
+    }
+
+    public BigDecimal getCezaMiktari() {
+        return cezaMiktari;
+    }
+
+    public void setCezaMiktari(BigDecimal cezaMiktari) {
+        this.cezaMiktari = cezaMiktari;
+    }
+
+    public LocalDate getCezaTarihi() {
+        return cezaTarihi;
+    }
+
+    public void setCezaTarihi(LocalDate cezaTarihi) {
+        this.cezaTarihi = cezaTarihi;
+    }
+
+    public LocalDate getOdemeTarihi() {
+        return odemeTarihi;
+    }
+
+    public void setOdemeTarihi(LocalDate odemeTarihi) {
+        this.odemeTarihi = odemeTarihi;
+    }
+
+    public String getDurum() {
+        return durum;
+    }
+
+    public void setDurum(String durum) {
+        this.durum = durum;
+    }
+
 }
 

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -24,14 +25,16 @@ public class Kategori {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ID")
-    private Integer id; // DB INT ile uyumlu
+    private Integer id;
 
     @Column(name = "ad", length = 50, unique = true, nullable = false)
     @JsonProperty("ad")
     private String ad;
 
     @OneToMany(mappedBy = "kategori", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Kitap> kitaplar = new ArrayList<>();
+
     @JsonIgnore
     public String getAd() {
         return ad;

@@ -4,6 +4,8 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -21,22 +23,18 @@ public class Emanet {
     @Column(name = "ID")
     private Integer id;
 
-    // --------- ÜYE ---------
     @ManyToOne
     @JoinColumn(name = "uyeID", nullable = false)
     private Uye uye;
 
-    // --------- GÖREVLİ ---------
     @ManyToOne
     @JoinColumn(name = "gorevliID", nullable = false)
     private Gorevli gorevli;
 
-    // --------- KİTAP ---------
     @ManyToOne
     @JoinColumn(name = "kitapID", nullable = false)
     private Kitap kitap;
 
-    // --------- TARİHLER ---------
     @Column(name = "emanetTarihi", nullable = false)
     private LocalDate emanetTarihi;
 
@@ -46,15 +44,73 @@ public class Emanet {
     @Column(name = "gercekTeslimTarihi")
     private LocalDate gercekTeslimTarihi;
 
-    // --------- CEZALAR ---------
     @OneToOne(mappedBy = "emanet", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnore
     private Ceza ceza;
 
-    // --------- DEFAULT EMANET TARİHİ ---------
     @PrePersist
     public void prePersist() {
         if (emanetTarihi == null) {
             emanetTarihi = LocalDate.now();
         }
+        if (beklenenTeslimTarihi == null){
+            beklenenTeslimTarihi = LocalDate.now().plusDays(15);
+        }
+    }
+
+    public Uye getUye() {
+        return uye;
+    }
+
+    public void setUye(Uye uye) {
+        this.uye = uye;
+    }
+
+    public Gorevli getGorevli() {
+        return gorevli;
+    }
+
+    public void setGorevli(Gorevli gorevli) {
+        this.gorevli = gorevli;
+    }
+
+    public Kitap getKitap() {
+        return kitap;
+    }
+
+    public void setKitap(Kitap kitap) {
+        this.kitap = kitap;
+    }
+
+    public LocalDate getEmanetTarihi() {
+        return emanetTarihi;
+    }
+
+    public void setEmanetTarihi(LocalDate emanetTarihi) {
+        this.emanetTarihi = emanetTarihi;
+    }
+
+    public LocalDate getBeklenenTeslimTarihi() {
+        return beklenenTeslimTarihi;
+    }
+
+    public void setBeklenenTeslimTarihi(LocalDate beklenenTeslimTarihi) {
+        this.beklenenTeslimTarihi = beklenenTeslimTarihi;
+    }
+
+    public LocalDate getGercekTeslimTarihi() {
+        return gercekTeslimTarihi;
+    }
+
+    public void setGercekTeslimTarihi(LocalDate gercekTeslimTarihi) {
+        this.gercekTeslimTarihi = gercekTeslimTarihi;
+    }
+
+    public Ceza getCeza() {
+        return ceza;
+    }
+
+    public void setCeza(Ceza ceza) {
+        this.ceza = ceza;
     }
 }

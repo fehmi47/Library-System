@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import com.example.demo.entity.Kategori;
 import com.example.demo.service.KategoriService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,11 +23,13 @@ public class KategoriController {
     }
 
     @PostMapping("/ekle")
+    @PreAuthorize("hasRole('LIBRARIAN')")
     public Kategori ekle(@RequestBody Kategori kategori){
         return kategoriService.kategoriKaydet(kategori);
     }
 
     @PutMapping("/guncelle/{id}")
+    @PreAuthorize("hasRole('LIBRARIAN')")
     // ID tipini Integer yaptık (Veritabanıyla uyum için)
     public ResponseEntity<Kategori> guncelle(@PathVariable Integer id, @RequestBody Kategori kategori){
         Kategori guncellenenKategori = kategoriService.kategoriGuncelle(id, kategori);
@@ -34,6 +37,7 @@ public class KategoriController {
     }
 
     @DeleteMapping("/sil/{id}")
+    @PreAuthorize("hasRole('LIBRARIAN')")
     // ID tipini Integer yaptık
     public ResponseEntity<String> sil(@PathVariable Integer id){
         kategoriService.kategoriSil(id);

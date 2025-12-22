@@ -1,5 +1,8 @@
 package com.example.demo.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -32,7 +35,6 @@ public class Kitap {
     @Column(name = "adet", nullable = false)
     private Integer adet = 0;
 
-    // --------- KATEGORI ---------
     @ManyToOne
     @JoinColumn(name = "kategoriID", nullable = false)
     private Kategori kategori;
@@ -41,8 +43,8 @@ public class Kitap {
     @JoinColumn(name  = "yazarID",nullable = false)
     private Yazar yazar;
 
-    // --------- EMANETLER (1:N) ---------
     @OneToMany(mappedBy = "kitap", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<Emanet> emanetler = new ArrayList<>();
 
     public String getAd() {
@@ -91,5 +93,9 @@ public class Kitap {
 
     public void setYazar(Yazar yazar) {
         this.yazar = yazar;
+    }
+
+    public Integer getId() {
+        return id;
     }
 }
