@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Kontrol Paneli</title>
+    <style>
+        :root {
+            --dark: #2c3e50;
+            --light: #f4f7f6;
+            --success: #27ae60;
+            --danger: #e74c3c;
+            --accent: #1abc9c;
+            --warning: #f39c12;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            display: flex;
+            background: var(--light);
+            min-height: 100vh;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 260px;
+            background: var(--dark);
+            color: white;
+            position: fixed;
+            top: 0; bottom: 0; left: 0;
+            z-index: 1000;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+        .sidebar h2 { text-align: center; color: var(--accent); padding: 20px 0; border-bottom: 1px solid #34495e; margin: 0; }
+        .menu-divider { padding: 15px 20px; font-size: 12px; color: #7f8c8d; letter-spacing: 1px; border-top: 1px solid #34495e; margin-top: 10px; }
+        .menu-btn {
+            width: 100%; border: none; background: none; color: white; padding: 15px 20px;
+            text-align: left; font-size: 15px; cursor: pointer; transition: 0.3s;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .menu-btn:hover { background: #34495e; padding-left: 30px; color: var(--accent); }
+
+        /* MAIN CONTENT */
+        .main-content {
+            margin-left: 260px;
+            flex: 1;
+            padding: 40px;
+            box-sizing: border-box;
+            width: calc(100% - 260px);
+        }
+
+        /* PANEL YAPISI */
+        .panel {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            display: none;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .panel.active { display: block; animation: fadeIn 0.4s; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* FORM ELEMANLARI */
+        .form-container { background: #f9f9f9; padding: 25px; border-radius: 8px; margin-bottom: 30px; border: 1px solid #eee; }
+        .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+
+        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; margin: 5px 0; }
+
+        .action-btn {
+            background: var(--accent); color: white; border: none; padding: 12px 25px;
+            border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s;
+        }
+        .action-btn:hover { opacity: 0.9; }
+
+        /* TABLO */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { text-align: left; padding: 15px; border-bottom: 1px solid #eee; }
+        th { background: #f8f9fa; color: var(--dark); }
+        .btn-sm { padding: 6px 12px; border-radius: 4px; border: none; color: white; cursor: pointer; font-size: 13px; margin-right: 5px; }
+
+        /* EKSTRA GÖRSEL AYARLAR */
+        .badge-member { background: #3498db; padding: 4px 8px; border-radius: 4px; color: white; font-size: 11px; }
+        .badge-admin { background: #e67e22; padding: 4px 8px; border-radius: 4px; color: white; font-size: 11px; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h2>Kütüphane</h2>
+    <button class="menu-btn" onclick="showPanel('kitapYonetim')">📚 Kitap Yönetimi</button>
+    <button class="menu-btn" onclick="showPanel('kategoriYonetim')">📁 Kategori Yönetimi</button>
+    <button class="menu-btn" onclick="showPanel('yazarYonetim')">✍️ Yazar Yönetimi</button>
+    <button class="menu-btn" onclick="showPanel('kullaniciYonetim')">👥 Kullanıcı Yönetimi</button>
+    <div class="menu-divider">İŞLEMLER</div>
+    <button class="menu-btn" onclick="showPanel('emanetYonetim')">🤝 Emanet & Ceza</button>
+    <button class="menu-btn" onclick="logout()" style="color: var(--danger); margin-top: 50px;">🚪 Güvenli Çıkış</button>
+</div>
+
+<div class="main-content">
+
+    <div id="kitapYonetim" class="panel">
+        <h3 id="kBaslik">📚 Kitap Yönetimi</h3>
+        <div class="form-container">
+            <div class="grid-form">
+                <input type="text" id="kAd" placeholder="Kitap Adı">
+                <input type="number" id="kSayfa" placeholder="Sayfa Sayısı">
+                <input type="number" id="kAdet" placeholder="Stok Adedi">
+                <input type="number" id="kKategoriId" placeholder="Kategori ID">
+                <input type="number" id="kYazarId" placeholder="Yazar ID">
+            </div>
+            <button class="action-btn" style="margin-top:15px;" onclick="adminKitapKaydet()">💾 Kaydet</button>
+        </div>
+        <table>
+            <thead><tr><th>ID</th><th>Ad</th><th>Yazar</th><th>Kategori</th><th>Stok</th><th>İşlem</th></tr></thead>
+            <tbody id="kitapTableBody"></tbody>
+        </table>
+    </div>
+
+    <div id="kategoriYonetim" class="panel">
+        <h3>📁 Kategori Yönetimi</h3>
+        <div class="form-container">
+            <input type="text" id="katAd" placeholder="Kategori Adı">
+            <button class="action-btn" style="margin-top:15px;" onclick="adminKategoriKaydet()">💾 Kaydet</button>
+        </div>
+        <table>
+            <thead><tr><th>ID</th><th>Kategori Adı</th><th>İşlem</th></tr></thead>
+            <tbody id="kategoriTableBody"></tbody>
+        </table>
+    </div>
+
+    <div id="yazarYonetim" class="panel">
+        <h3>✍️ Yazar Yönetimi</h3>
+        <div class="form-container">
+            <div class="grid-form">
+                <input type="text" id="yazAd" placeholder="Yazar Adı">
+                <input type="text" id="yazSoyad" placeholder="Yazar Soyadı">
+            </div>
+            <button class="action-btn" style="margin-top:15px;" onclick="adminYazarKaydet()">💾 Kaydet</button>
+        </div>
+        <table>
+            <thead><tr><th>ID</th><th>Ad Soyad</th><th>İşlem</th></tr></thead>
+            <tbody id="yazarTableBody"></tbody>
+        </table>
+    </div>
+
+    <div id="kullaniciYonetim" class="panel">
+        <h3 id="uBaslik">👥 Kullanıcı/Görevli Yönetimi</h3>
+        <div class="form-container">
+            <div class="grid-form">
+                <input type="text" id="uAd" placeholder="Ad">
+                <input type="text" id="uSoyad" placeholder="Soyad">
+                <input type="email" id="uEposta" placeholder="E-posta">
+                <input type="tel" id="uTelefon" placeholder="Telefon (05xx...)">
+                <input type="password" id="uSifre" placeholder="Şifre">
+                <select id="uRol">
+                    <option value="MEMBER">Üye (Member)</option>
+                    <option value="LIBRARIAN">Görevli (Librarian)</option>
+                </select>
+            </div>
+            <div style="margin-top:20px; display:flex; gap:10px;">
+                <button id="uBtn" class="action-btn" onclick="adminKullaniciKaydet()">💾 Kaydet</button>
+                <button id="uIptal" class="action-btn" style="background:#7f8c8d; display:none;" onclick="uFormSifirla()">❌ İptal</button>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+            <button onclick="tumKullanicilariGetir('HEPSI')" class="btn-sm" style="background: #2c3e50;">🌍 Tümünü Listele</button>
+            <button onclick="tumKullanicilariGetir('MEMBER')" class="btn-sm" style="background: #3498db;">👤 Sadece Üyeler</button>
+            <button onclick="tumKullanicilariGetir('LIBRARIAN')" class="btn-sm" style="background: #e67e22;">🔑 Sadece Görevliler</button>
+        </div>
+
+        <<table>
+        <thead>
+        <tr>
+            <th>ID</th> <th>Tip</th>
+            <th>Ad Soyad</th>
+            <th>E-posta</th>
+            <th>Telefon</th>
+            <th>İşlem</th>
+        </tr>
+        </thead>
+        <tbody id="kullaniciTableBody"></tbody>
+    </table>
+    </div>
+
+    <div id="emanetYonetim" class="panel">
+        <h3>🤝 Yeni Emanet İşlemi (Ödünç Ver)</h3>
+        <p style="font-size: 0.9em; color: #666;">* Emanet tarihi bugünün tarihi olarak otomatik kaydedilecektir.</p>
+        <div class="form-container">
+            <div class="grid-form">
+                <input type="number" id="eKitapId" placeholder="Kitap ID">
+                <input type="number" id="eUyeId" placeholder="Üye ID">
+            </div>
+            <button class="action-btn" onclick="adminEmanetVer()" style="margin-top:15px;">💾 Ödünç Ver</button>
+        </div>
+
+        <h3>📜 Aktif Emanet Listesi</h3>
+        <table>
+            <thead>
+            <tr>
+                <th>ID</th><th>Üye</th><th>Kitap</th><th>Görevli</th><th>Emanet Tarihi</th><th>Beklenen Teslim</th><th>İşlem</th>
+            </tr>
+            </thead>
+            <tbody id="emanetTableBody"></tbody>
+        </table>
+
+        <h3 style="margin-top: 40px;">💰 Tüm Üye Cezaları</h3>
+        <table>
+            <thead>
+            <tr>
+                <th>ID</th><th>Üye</th><th>Tutar</th><th>Durum</th><th>İşlem</th>
+            </tr>
+            </thead>
+            <tbody id="cezaTableBody"></tbody>
+        </table>
+    </div>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

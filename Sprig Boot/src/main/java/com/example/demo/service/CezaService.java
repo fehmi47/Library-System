@@ -3,6 +3,7 @@ package com.example.demo.service;
 import com.example.demo.entity.Ceza;
 import com.example.demo.repository.CezaRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -35,14 +36,21 @@ public class CezaService {
         Ceza ceza = cezaRepository.findById(Long.valueOf(id))
                 .orElseThrow(() -> new RuntimeException("Ceza kaydı bulunamadı!"));
 
-        // 2. Güvenlik Kontrolü: Giriş yapan kişi ile cezanın sahibi aynı mı?
-        String loginOlanEposta = SecurityContextHolder.getContext().getAuthentication().getName();
-        if (!ceza.getEmanet().getUye().getEposta().equals(loginOlanEposta)) {
+        // 2. Güvenlik Kontrolü (GÜNCELLENDİ)
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String loginOlanEposta = auth.getName();
+
+        // Kullanıcının rollerini kontrol et
+        boolean isAdmin = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_LIBRARIAN"));
+
+        // Eğer admin değilse ve ceza kendine ait değilse hata fırlat
+        if (!isAdmin && !ceza.getEmanet().getUye().getEposta().equals(loginOlanEposta)) {
             throw new RuntimeException("Bu ceza size ait değil, ödeyemezsiniz!");
         }
 
-        // 3. Zaten ödenmiş mi?
-        if ("ÖDENDİ".equals(ceza.getDurum())) {
+        // 3. Zaten ödenmiş mi? (Büyük/Küçük harf duyarlılığı için equalsIgnoreCase daha iyidir)
+        if ("ÖDENDİ".equalsIgnoreCase(ceza.getDurum())) {
             return "Bu ceza zaten ödenmiş.";
         }
 
@@ -52,6 +60,6 @@ public class CezaService {
 
         cezaRepository.save(ceza);
 
-        return "Ödeme işleminiz başarıyla tamamlandı. Borcunuz kapatıldı.";
+        return "Ödeme işlemi başarıyla tamamlandı.";
     }
 }

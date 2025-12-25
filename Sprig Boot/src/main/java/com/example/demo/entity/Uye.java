@@ -37,9 +37,8 @@ public class Uye {
     @Column(name = "sifre", length = 255, nullable = false)
     private String sifre;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "cinsiyet", columnDefinition = "ENUM('E','K','B') DEFAULT 'B'")
-    private Cinsiyet cinsiyet = Cinsiyet.B;
+    @Column(name = "rol", length = 50)
+    private String rol;
 
     @OneToMany(mappedBy = "uye", fetch = FetchType.LAZY)
     @JsonIgnore
@@ -89,11 +88,11 @@ public class Uye {
         this.eposta = eposta;
     }
 
-    public Cinsiyet getCinsiyet() {
-        return cinsiyet;
+    public String getRol() {
+        return rol;
     }
 
-    public void setCinsiyet(Cinsiyet cinsiyet) {
-        this.cinsiyet = cinsiyet;
+    public void setRol(String rol) {
+        this.rol = rol;
     }
 }

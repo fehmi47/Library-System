@@ -43,7 +43,7 @@ public class UyeService {
         mevcutUye.setAd(yeniUye.getAd());
         mevcutUye.setSoyad(yeniUye.getSoyad());
         mevcutUye.setEposta(yeniUye.getEposta());
-        mevcutUye.setCinsiyet(yeniUye.getCinsiyet());
+        mevcutUye.setRol(yeniUye.getRol());
 
         if (yeniUye.getSifre() != null && !yeniUye.getSifre().isEmpty()) {
             String hashliSifre = passwordEncoder.encode(yeniUye.getSifre());

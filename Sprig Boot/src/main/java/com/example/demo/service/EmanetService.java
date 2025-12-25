@@ -34,32 +34,40 @@ public class EmanetService {
 
     @Transactional
     public Emanet oduncVer(EmanetDTO dto) {
-        // 1. Giriş yapan kullanıcının e-postasını al
-        String loginOlanEposta = SecurityContextHolder.getContext().getAuthentication().getName();
-
-        // 2. Kullanıcıyı ve Kitabı veritabanından bul
-        Uye uye = uyeRepository.findByEposta(loginOlanEposta)
-                .orElseThrow(() -> new RuntimeException("Giriş yapan üye bulunamadı!"));
-
-        Kitap kitap = kitapRepository.findById(dto.getKitapId())
-                .orElseThrow(() -> new RuntimeException("Kitap bulunamadı!"));
-
-        // 3. Stok Kontrolü
-        if (kitap.getAdet() <= 0) {
-            throw new RuntimeException("Bu kitap şu an stokta yok!");
+        Uye hedefUye;
+        // 1. Üyeyi Belirle (Admin bir üyeye mi veriyor yoksa üye kendisi mi alıyor?)
+        if (dto.getUyeId() != null) {
+            hedefUye = uyeRepository.findById(dto.getUyeId())
+                    .orElseThrow(() -> new RuntimeException("Üye bulunamadı!"));
+        } else {
+            String loginOlanEposta = SecurityContextHolder.getContext().getAuthentication().getName();
+            hedefUye = uyeRepository.findByEposta(loginOlanEposta)
+                    .orElseThrow(() -> new RuntimeException("Giriş yapan üye bulunamadı!"));
         }
 
-        // 4. Emanet Nesnesini Oluştur (DTO'dan Entity'ye dönüşüm)
+        // 2. Kitap ve Stok Kontrolü
+        Kitap kitap = kitapRepository.findById(dto.getKitapId())
+                .orElseThrow(() -> new RuntimeException("Kitap bulunamadı!"));
+        if (kitap.getAdet() <= 0) throw new RuntimeException("Stok yetersiz!");
+
+        // 3. Emanet Oluştur
         Emanet emanet = new Emanet();
-        emanet.setUye(uye);
+        emanet.setUye(hedefUye);
         emanet.setKitap(kitap);
 
-        // Varsayılan görevliyi ata (Örn: ID 4)
-        Gorevli sistemGorevlisi = gorevliRepository.findById(4)
-                .orElseThrow(() -> new RuntimeException("Sistem görevlisi bulunamadı!"));
-        emanet.setGorevli(sistemGorevlisi);
+        // TARİH: Her zaman bugün (Senin istediğin gibi)
+        emanet.setEmanetTarihi(LocalDate.now());
 
-        // 5. Stok Güncelle ve Kaydet
+        // BEKLENEN İADE: DTO'dan gelen tarih (Gelecekteki bir gün)
+        emanet.setBeklenenTeslimTarihi(dto.getGerçekTeslimTarihi());
+
+        // GÖREVLİ: O an giriş yapan admin/görevli kimse o setlenir
+        String aktifGorevliEposta = SecurityContextHolder.getContext().getAuthentication().getName();
+        Gorevli gorevli = gorevliRepository.findByEposta(aktifGorevliEposta)
+                .orElseThrow(() -> new RuntimeException("Görevli bulunamadı!"));
+        emanet.setGorevli(gorevli);
+
+        // 4. Stok Düş ve Kaydet
         kitap.setAdet(kitap.getAdet() - 1);
         kitapRepository.save(kitap);
 

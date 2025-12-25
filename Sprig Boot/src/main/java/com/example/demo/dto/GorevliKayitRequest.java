@@ -11,8 +11,9 @@ public class GorevliKayitRequest {
     private String ad;
     private String soyad;
     private String eposta;
+    private String telefonNo;
     private String sifre;
-    private String unvan;
+    private String rol;
 
 
 
@@ -40,12 +41,12 @@ public class GorevliKayitRequest {
         this.eposta = eposta;
     }
 
-    public String getUnvan() {
-        return unvan;
+    public String getRol() {
+        return rol;
     }
 
-    public void setUnvan(String unvan) {
-        this.unvan = unvan;
+    public void getRol(String rol) {
+        this.rol = rol;
     }
 
     public String getSifre() {
@@ -54,5 +55,9 @@ public class GorevliKayitRequest {
 
     public void setSifre(String sifre) {
         this.sifre = sifre;
+    }
+
+    public String getTelefonNo() {
+        return telefonNo;
     }
 }

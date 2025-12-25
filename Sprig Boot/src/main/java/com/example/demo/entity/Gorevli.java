@@ -28,8 +28,12 @@ public class Gorevli {
     @Column(name = "soyad", length = 100, nullable = false)
     private String soyad; // Görevli soyadı
 
-    @Column(name = "unvan", length = 100)
-    private String unvan; // Görevli unvanı
+    @Column(name = "telefonNo", length = 20)
+    private String telefonNo;
+
+
+    @Column(name = "rol", length = 50)
+    private String rol; // Görevli unvanı
 
     @Column(name = "sifre", length = 255, nullable = false)
     private String sifre; // Görevli şifresi
@@ -73,15 +77,23 @@ public class Gorevli {
         this.soyad = soyad;
     }
 
-    public String getUnvan() {
-        return unvan;
+    public String getRol() {
+        return rol;
     }
 
-    public void setUnvan(String unvan) {
-        this.unvan = unvan;
+    public void setRol(String rol) {
+        this.rol = rol;
     }
 
     public void setEposta(String eposta) {
         this.eposta = eposta;
+    }
+
+    public String getTelefonNo() {
+        return telefonNo;
+    }
+
+    public void setTelefonNo(String telefonNo) {
+        this.telefonNo = telefonNo;
     }
 }

@@ -50,11 +50,13 @@ public class Emanet {
 
     @PrePersist
     public void prePersist() {
-        if (emanetTarihi == null) {
-            emanetTarihi = LocalDate.now();
+        // Eğer service katmanında tarih setlenmemişse (null ise) bugün yap
+        if (this.emanetTarihi == null) {
+            this.emanetTarihi = LocalDate.now();
         }
-        if (beklenenTeslimTarihi == null){
-            beklenenTeslimTarihi = LocalDate.now().plusDays(15);
+        // Beklenen tarih null ise 15 gün ekle
+        if (this.beklenenTeslimTarihi == null){
+            this.beklenenTeslimTarihi = LocalDate.now().plusDays(15);
         }
     }
 
