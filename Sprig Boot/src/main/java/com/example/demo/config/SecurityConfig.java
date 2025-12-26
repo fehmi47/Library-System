@@ -24,29 +24,51 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
-                .cors(Customizer.withDefaults())
-                // SecurityConfig.java içindeki authorizeHttpRequests kısmını şununla değiştir:
+                .csrf(csrf -> csrf.disable()) // CSRF korumasını kapatıyoruz (Test için)
+                .cors(Customizer.withDefaults()) // CORS ayarları
+
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/index.html", "/app.js", "/style.css", "/admin.html", "/uye.html", "/favicon.ico").permitAll()
+                        // 1. HERKESE AÇIK ALANLAR (Statik dosyalar ve Login API'si)
+                        // "uye.js" ve "app.js" burada olmazsa sayfa çalışmaz!
+                        .requestMatchers(
+                                "/",
+                                "/index.html",
+                                "/app.js",
+                                "/uye.js",          // <--- Üye paneli JS dosyası
+                                "/style.css",
+                                "/admin.html",
+                                "/uye.html",
+                                "/favicon.ico"
+                        ).permitAll()
+
+                        // Login ve Register işlemleri herkese açık
                         .requestMatchers("/api/auth/**").permitAll()
 
-                        // Kitap işlemleri yetkileri
+                        // 2. KİTAP İŞLEMLERİ
+                        // UserDetailsService "ROLE_" eklediği için artık hasAnyRole kullanıyoruz.
+                        // hasAnyRole("MEMBER") arka planda "ROLE_MEMBER" arar ve senin kodunla EŞLEŞİR.
                         .requestMatchers("/api/kitap/liste").hasAnyRole("LIBRARIAN", "MEMBER")
-                        .requestMatchers("/api/kitap/ekle/**", "/api/kitap/guncelle/**", "/api/kitap/sil/**").hasRole("LIBRARIAN")
+                        .requestMatchers("/api/kitap/**").hasRole("LIBRARIAN")
 
-                        // Kategori ve Yazar yetkileri
+                        // 3. EMANET VE CEZA İŞLEMLERİ (Üye Paneli İçin Kritik)
+                        .requestMatchers("/api/emanet/**").hasAnyRole("LIBRARIAN", "MEMBER")
+                        .requestMatchers("/api/ceza/**").hasAnyRole("LIBRARIAN", "MEMBER")
+
+                        // 4. ÜYE LİSTESİ (ID bulma işlemi için gerekli)
+                        .requestMatchers("/api/uye/liste").hasAnyRole("LIBRARIAN", "MEMBER")
+
+                        // 5. YÖNETİCİ ÖZEL ALANLARI
+                        .requestMatchers("/api/uye/**").hasRole("LIBRARIAN")
                         .requestMatchers("/api/kategori/**", "/api/yazar/**").hasRole("LIBRARIAN")
+                        .requestMatchers("/api/admin/**").hasRole("LIBRARIAN")
 
-                        // Admin check noktası
-                        .requestMatchers("/api/admin/check").hasRole("LIBRARIAN")
-
+                        // Diğer tüm istekler için giriş şart
                         .anyRequest().authenticated()
                 )
-                // Kritik Nokta: Tarayıcı kutusunu (Popup) engelleyen kısım
+                // Tarayıcıda varsayılan giriş kutusunu (Popup) engellemek için:
                 .httpBasic(basic -> basic.authenticationEntryPoint((request, response, authException) -> {
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.getWriter().write("Yetkisiz Erişim: Lütfen giriş yapın.");
+                    response.getWriter().write("Giriş Başarısız: Lütfen e-posta ve şifrenizi kontrol edin.");
                 }));
 
         return http.build();

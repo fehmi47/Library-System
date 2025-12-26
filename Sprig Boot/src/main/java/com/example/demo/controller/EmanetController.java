@@ -32,4 +32,10 @@ public class EmanetController {
     public ResponseEntity<String> iadeEt(@PathVariable Integer id) {
         return ResponseEntity.ok(emanetService.iadeAl(id));
     }
+
+    @GetMapping("/benim-emanetlerim")
+    public ResponseEntity<List<Emanet>> getBenimEmanetlerim() {
+        // Tüm işi service hallediyor
+        return ResponseEntity.ok(emanetService.getBenimEmanetlerim());
+    }
 }

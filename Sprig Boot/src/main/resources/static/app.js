@@ -13,7 +13,11 @@ async function login() {
         return;
     }
 
-    const authHeader = 'Basic ' + btoa(eposta + ":" + sifre);
+    // --- DÜZELTME BURADA YAPILDI ---
+    // Türkçe karakterleri (UTF-8) önce encodeURIComponent ile kodluyoruz,
+    // sonra unescape ile binary string'e çevirip btoa ile Base64 yapıyoruz.
+    // Bu sayede "şifre" gibi kelimeler hata vermez.
+    const authHeader = 'Basic ' + btoa(unescape(encodeURIComponent(eposta + ":" + sifre)));
 
     try {
         // 1. ADIM: Genel Giriş Kontrolü
@@ -22,7 +26,6 @@ async function login() {
             headers: { 'Authorization': authHeader }
         });
 
-        // Eğer ilk adımda 401 (Unauthorized) dönerse, kullanıcı adı veya şifre yanlıştır.
         if (response.status === 401) {
             alert("❌ Hatalı e-posta veya şifre!");
             return;
@@ -31,30 +34,27 @@ async function login() {
         if (response.ok) {
             sessionStorage.setItem("auth", authHeader);
 
-            // 2. ADIM: Yetki Kontrolü (Admin mi?)
-            // Buradaki URL'nin backend'deki AdminController ile tam uyuştuğundan emin ol.
+            // 2. ADIM: Yetki Kontrolü
             const adminCheck = await fetch('/api/admin/check', {
                 headers: { 'Authorization': authHeader }
             });
 
-            // Admin kontrolü başarılıysa admin paneline
             if (adminCheck.status === 200) {
                 window.location.replace("admin.html");
             }
-            // Admin kontrolü 403 (Forbidden) dönüyorsa, bu kişi admin değil üyedir.
             else if (adminCheck.status === 403 || adminCheck.status === 200) {
                 window.location.replace("uye.html");
             }
-            // Beklenmedik bir hata varsa bildir
             else {
-                alert("Giriş yapıldı ancak yetki kontrolü sırasında bir hata oluştu.");
+                // Her ihtimale karşı üyeye yönlendir
+                window.location.replace("uye.html");
             }
         } else {
             alert("Giriş yapılamadı. Sunucu hatası.");
         }
     } catch (error) {
         console.error("Bağlantı Hatası:", error);
-        alert("Sunucuya bağlanılamadı. Backend'in çalıştığından emin olun.");
+        alert("Sunucuya bağlanılamadı.");
     }
 }
 
