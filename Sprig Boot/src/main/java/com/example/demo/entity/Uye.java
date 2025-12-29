@@ -6,6 +6,8 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -31,7 +33,10 @@ public class Uye {
     @Column(name = "telefonNo", length = 20)
     private String telefonNo;
 
+
     @Column(name = "eposta", length = 100, unique = true, nullable = false)
+    @NotBlank(message = "E-posta boş olamaz") // Boş gelmesini engeller
+    @Email(message = "Lütfen geçerli bir e-posta adresi giriniz")
     private String eposta;
 
     @Column(name = "sifre", length = 255, nullable = false)
@@ -39,6 +44,9 @@ public class Uye {
 
     @Column(name = "rol", length = 50)
     private String rol;
+
+    @Column(name = "sifirlamaKodu", length = 255)
+    private String sifirlamaKodu;
 
     @OneToMany(mappedBy = "uye", fetch = FetchType.LAZY)
     @JsonIgnore
@@ -94,5 +102,14 @@ public class Uye {
 
     public void setRol(String rol) {
         this.rol = rol;
+    }
+
+
+    public String getSifirlamaKodu() {
+        return sifirlamaKodu;
+    }
+
+    public void setSifirlamaKodu(String sifirlamaKodu) {
+        this.sifirlamaKodu = sifirlamaKodu;
     }
 }

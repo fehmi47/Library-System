@@ -21,7 +21,7 @@ public class Kitap {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ID")
-    private Integer id; // DB INT ile uyumlu
+    private Integer id;
 
     @Column(name = "ad", nullable = false, length = 255)
     private String ad;

@@ -30,8 +30,6 @@ public class GorevliService {
         gorevli.setEposta(request.getEposta());
         gorevli.setRol(request.getRol());
         gorevli.setTelefonNo(request.getTelefonNo());
-
-        // ÖNEMLİ: Şifreyi kaydetmeden önce hash'liyoruz
         gorevli.setSifre(passwordEncoder.encode(request.getSifre()));
 
         return gorevliRepository.save(gorevli);

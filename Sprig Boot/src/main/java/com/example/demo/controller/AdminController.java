@@ -22,16 +22,17 @@ public class AdminController {
         this.gorevliService = gorevliService;
     }
 
+    //Burası giriş işleminde kontrol için kullanılıyor
     @GetMapping("/check")
-    @PreAuthorize("hasRole('LIBRARIAN')") // Sadece ROLE_LIBRARIAN yetkisi olanlar girebilir
+    @PreAuthorize("hasRole('LIBRARIAN')")
     public ResponseEntity<String> checkAdmin() {
         return ResponseEntity.ok("Onaylandı");
     }
-    // AdminController.java veya GorevliController.java
+
     @GetMapping("/gorevli-liste")
     @PreAuthorize("hasRole('LIBRARIAN')")
     public List<Gorevli> gorevliListele() {
-        return gorevliService.tumGorevlileriGoster(); // Service içinde bu metodun olduğunu varsayıyoruz
+        return gorevliService.tumGorevlileriGoster();
     }
 }
 

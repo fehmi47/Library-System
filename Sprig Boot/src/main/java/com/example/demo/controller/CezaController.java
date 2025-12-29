@@ -25,7 +25,7 @@ public class CezaController {
 
     @GetMapping("/benim-cezalar")
     public List<Ceza> uyeListele(){
-        return cezaService.benimCezalarıGoster();
+        return cezaService.benimCezalariGoster();
     }
 
     @PostMapping("/ode/{id}")

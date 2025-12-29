@@ -6,6 +6,8 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,23 +25,25 @@ public class Gorevli {
     private Integer id;
 
     @Column(name = "ad", length = 100, nullable = false)
-    private String ad; // Görevli adı
+    private String ad;
 
     @Column(name = "soyad", length = 100, nullable = false)
-    private String soyad; // Görevli soyadı
+    private String soyad;
 
     @Column(name = "telefonNo", length = 20)
     private String telefonNo;
 
 
     @Column(name = "rol", length = 50)
-    private String rol; // Görevli unvanı
+    private String rol;
 
     @Column(name = "sifre", length = 255, nullable = false)
-    private String sifre; // Görevli şifresi
+    private String sifre;
 
     @Column(name = "eposta", length = 100, nullable = false, unique = true)
-    private String eposta; // Görevli emaili
+    @NotBlank(message = "E-posta boş olamaz")
+    @Email(message = "Lütfen geçerli bir e-posta adresi giriniz")
+    private String eposta;
 
     @OneToMany(mappedBy = "gorevli", fetch = FetchType.LAZY)
     @JsonIgnore

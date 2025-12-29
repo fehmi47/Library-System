@@ -8,10 +8,6 @@ import lombok.AllArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-/**
- * Ceza işlemlerini temsil eden entity.
- * Veritabanındaki CEZA tablosuna karşılık gelir.
- */
 @Entity
 @Table(name = "CEZA")
 @Data

@@ -34,14 +34,9 @@ public class EmanetService {
     }
 
     public List<Emanet> getBenimEmanetlerim() {
-        // 1. O an giriş yapmış kullanıcının e-postasını al
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-
-        // 2. Üyeyi veritabanında bul
         Uye uye = uyeRepository.findByEposta(email)
                 .orElseThrow(() -> new RuntimeException("Giriş yapan üye bulunamadı!"));
-
-        // 3. O üyeye ait emanetleri getir
         return emanetRepository.findAllByUye(uye);
     }
 
@@ -49,19 +44,16 @@ public class EmanetService {
     public Emanet oduncVer(EmanetDTO dto) {
         Uye hedefUye;
 
-        // 1. ÜYE BELİRLEME
-        // Eğer DTO'da uyeId varsa (Admin panelinden geliyorsa)
+        //emaney verilecek üyeyi bulma aşamaları
         if (dto.getUyeId() != null) {
             hedefUye = uyeRepository.findById(dto.getUyeId())
                     .orElseThrow(() -> new RuntimeException("Üye bulunamadı!"));
         } else {
-            // DTO'da yoksa (Üye kendi panelinden alıyorsa) giriş yapan kişiyi bul
             String loginOlanEposta = SecurityContextHolder.getContext().getAuthentication().getName();
             hedefUye = uyeRepository.findByEposta(loginOlanEposta)
                     .orElseThrow(() -> new RuntimeException("Giriş yapan üye bulunamadı!"));
         }
 
-        // 2. KİTAP VE STOK KONTROLÜ
         Kitap kitap = kitapRepository.findById(dto.getKitapId())
                 .orElseThrow(() -> new RuntimeException("Kitap bulunamadı!"));
 
@@ -69,43 +61,30 @@ public class EmanetService {
             throw new RuntimeException("Stok yetersiz! Kitap tükenmiş.");
         }
 
-        // ... kitap bulundu ve stok kontrolü yapıldı ...
-        if (kitap.getAdet() <= 0) {
-            throw new RuntimeException("Stok yetersiz! Kitap tükenmiş.");
-        }
-
-        // --- YENİ EKLENEN KISIM: AYNI KİTAP KONTROLÜ ---
+        //eğer kullanıcı kitabı ödünç almışsa aynı kitapı tekrar ödünç alamaz
         boolean zatenVar = emanetRepository.existsByUyeAndKitapAndGercekTeslimTarihiIsNull(hedefUye, kitap);
         if (zatenVar) {
             throw new RuntimeException("Bu kitabı zaten ödünç aldınız! Önce elinizdekini iade etmelisiniz.");
         }
 
-        // 3. EMANET NESNESİ OLUŞTURMA
         Emanet emanet = new Emanet();
         emanet.setUye(hedefUye);
         emanet.setKitap(kitap);
 
-        // TARİHLERİ OTOMATİK AYARLA
         emanet.setEmanetTarihi(LocalDate.now());
-        // Frontend'den bekleme, HER ZAMAN bugünden 15 gün sonrası
         emanet.setBeklenenTeslimTarihi(LocalDate.now().plusDays(15));
 
-        // 4. GÖREVLİ ATAMA (Admin mi, Üye mi?)
+        //Sistemde emanet işlemini yapan kim olduğunu buluruz
         String aktifKullaniciEposta = SecurityContextHolder.getContext().getAuthentication().getName();
         var gorevliOptional = gorevliRepository.findByEposta(aktifKullaniciEposta);
 
         if (gorevliOptional.isPresent()) {
-            // İşlemi yapan Admin/Görevli ise onu ata
             emanet.setGorevli(gorevliOptional.get());
         } else {
-            // İşlemi yapan Üye ise, veritabanındaki varsayılan "Sistem" görevlisini (ID=1) ata.
-            // DİKKAT: Veritabanında ID=1 olan bir görevli olduğundan emin ol!
             Gorevli varsayilanGorevli = gorevliRepository.findById(1)
                     .orElseThrow(() -> new RuntimeException("Sistem hatası: Varsayılan görevli (ID:1) bulunamadı."));
             emanet.setGorevli(varsayilanGorevli);
         }
-
-        // 5. STOK DÜŞ VE KAYDET
         kitap.setAdet(kitap.getAdet() - 1);
         kitapRepository.save(kitap);
 
@@ -115,53 +94,45 @@ public class EmanetService {
 
     @Transactional
     public String iadeAl(Integer emanetId) {
-        // 1. Emanet Kaydını Bul
         Emanet emanet = emanetRepository.findById(emanetId)
                 .orElseThrow(() -> new RuntimeException("Emanet kaydı bulunamadı!"));
 
-        // --- GÜVENLİK KONTROLÜ (YENİ EKLENEN KISIM) ---
-        // Giriş yapan kişinin bilgilerini al
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String girisYapanEmail = auth.getName();
 
-        // Bu kişi Admin/Görevli mi? (Rol kontrolü)
+        // iade alanın admin olup olmadığına bakılır
         boolean isAdmin = auth.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_LIBRARIAN") || a.getAuthority().equals("LIBRARIAN"));
 
-        // Kural: Eğer Admin DEĞİLSE ve Emanet bu kişiye ait DEĞİLSE hata ver.
+        //eğer giriş yapan admin değilse ve emanet ona ait değilse hata fırlatır
         if (!isAdmin && !emanet.getUye().getEposta().equals(girisYapanEmail)) {
             throw new RuntimeException("HATA: Yetkisiz işlem! Sadece kendi emanetlerinizi iade edebilirsiniz.");
         }
-        // -----------------------------------------------
 
-        // 2. Zaten iade edilmiş mi kontrolü
+        //iade edilen bir emaneti tekrar iade etmemek için kontrol ederiz
         if (emanet.getGercekTeslimTarihi() != null) {
             return "Bu kitap zaten iade edilmiş.";
         }
 
-        // 3. İade Tarihini İşle
         emanet.setGercekTeslimTarihi(LocalDate.now());
 
-        // 4. Stok Artır
         Kitap kitap = emanet.getKitap();
         kitap.setAdet(kitap.getAdet() + 1);
         kitapRepository.save(kitap);
 
-        // 5. Ceza Hesaplama (Senin yazdığın orijinal mantık)
         long gecikmeGunu = ChronoUnit.DAYS.between(emanet.getBeklenenTeslimTarihi(), emanet.getGercekTeslimTarihi());
         String mesaj = "Kitap başarıyla iade edildi.";
 
         if (gecikmeGunu > 0) {
             BigDecimal cezaTutari = BigDecimal.valueOf(gecikmeGunu * 10.0);
 
-            // Ceza nesnesi oluşturma
             Ceza ceza = new Ceza();
-            ceza.setEmanet(emanet); // Emanet ile ilişkilendir
+            ceza.setEmanet(emanet);
             ceza.setCezaMiktari(cezaTutari);
             ceza.setCezaTarihi(LocalDate.now());
-            ceza.setDurum("ÖDENMEDİ"); // Durum string ise
+            ceza.setDurum("ÖDENMEDİ");
 
-            // Emanet üzerinden cezayı set et (Eğer ilişki varsa)
+
             emanet.setCeza(ceza);
 
 

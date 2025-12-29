@@ -2,27 +2,251 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
+    <title>Kütüphane Giriş</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kütüphane Sistemi - Giriş</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        :root { --primary: #1abc9c; --dark: #2c3e50; --light: #ecf0f1; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--dark); display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+
+        .container { background: white; padding: 40px; border-radius: 10px; width: 350px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; }
+        .logo i { font-size: 50px; color: var(--primary); margin-bottom: 10px; }
+        h2 { color: var(--dark); margin-bottom: 20px; }
+
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; margin-bottom: 5px; color: #7f8c8d; font-size: 14px; }
+        .input-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+
+        .btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s; margin-top: 10px; }
+        .btn:hover { background: #16a085; }
+
+        .toggle-link { margin-top: 15px; font-size: 14px; color: #7f8c8d; }
+        .toggle-link a { color: var(--primary); text-decoration: none; cursor: pointer; font-weight: bold; }
+
+        /* Formları Gizleme/Gösterme Efekti */
+        .form-box { display: none; }
+        .form-box.active { display: block; animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
 </head>
 <body>
-    <div class="login-container">
-        <div class="login-box">
-            <h2>📚 Kütüphane Girişi</h2>
-            <p>Lütfen bilgilerinizi giriniz</p>
-            
-            <div class="input-group">
-                <input type="text" id="username" placeholder="E-posta" required>
-            </div>
-            
-            <div class="input-group">
-                <input type="password" id="password" placeholder="Şifre" required>
-            </div>
-            
-            <button onclick="login()" class="btn-login">Giriş Yap</button>
+
+<div class="container">
+    <div class="logo"><i class="fas fa-book-open"></i></div>
+
+    <div id="form-login" class="form-box active">
+        <h2>Giriş Yap</h2>
+        <div class="input-group">
+            <label>E-posta Adresi</label>
+            <input type="text" id="username" placeholder="ornek@email.com">
+        </div>
+        <div class="input-group">
+            <label>Şifre</label>
+            <input type="password" id="password" placeholder="******">
+        </div>
+
+        <div style="text-align: right; margin-bottom: 10px;">
+            <a onclick="toggleForm('form-forgot')" style="color: #e74c3c; font-size: 12px; cursor: pointer;">Şifremi Unuttum?</a>
+        </div>
+
+        <button class="btn" onclick="login()">Giriş Yap</button>
+
+        <div class="toggle-link">
+            Hesabınız yok mu? <a onclick="toggleForm('form-register')">Kayıt Ol</a>
         </div>
     </div>
-    <script src="app.js"></script>
+
+    <div id="form-register" class="form-box">
+        <h2>Kayıt Ol</h2>
+        <div class="input-group">
+            <label>Ad</label>
+            <input type="text" id="regAd">
+        </div>
+        <div class="input-group">
+            <label>Soyad</label>
+            <input type="text" id="regSoyad">
+        </div>
+        <div class="input-group">
+            <label>Telefon</label>
+            <input type="text" id="regTelefon" placeholder="0555...">
+        </div>
+        <div class="input-group">
+            <label>E-posta</label>
+            <input type="email" id="regEmail">
+        </div>
+        <div class="input-group">
+            <label>Şifre</label>
+            <input type="password" id="regPass">
+        </div>
+        <button class="btn" onclick="register()">Kaydı Tamamla</button>
+
+        <div class="toggle-link">
+            Zaten üye misiniz? <a onclick="toggleForm('form-login')">Giriş Yap</a>
+        </div>
+    </div>
+
+    <div id="form-forgot" class="form-box">
+        <h2>Şifre Sıfırlama</h2>
+
+        <div id="forgot-step-1">
+            <p style="font-size: 13px; color: #7f8c8d; margin-bottom: 15px;">Kayıtlı telefon numaranızı giriniz. Size SMS ile doğrulama kodu göndereceğiz.</p>
+            <div class="input-group">
+                <label>Telefon Numarası</label>
+                <input type="text" id="forgotPhone" placeholder="0555..." required>
+            </div>
+            <button class="btn" onclick="sendResetCode()">Kod Gönder</button>
+        </div>
+
+        <div id="forgot-step-2" style="display: none;">
+            <p style="font-size: 13px; color: #7f8c8d; margin-bottom: 15px;">Telefonunuza gelen 4 haneli kodu giriniz.</p>
+
+            <div class="input-group">
+                <label>SMS Kodu</label>
+                <input type="text" id="forgotCode" placeholder="Örn: 1234" required>
+            </div>
+            <div class="input-group">
+                <label>Yeni Şifre</label>
+                <input type="password" id="newPassword" placeholder="Yeni şifreniz" required>
+            </div>
+
+            <button class="btn" onclick="finishPasswordReset()">Şifreyi Güncelle</button>
+        </div>
+
+        <div class="toggle-link">
+            <a onclick="toggleForm('form-login')"><i class="fas fa-arrow-left"></i> Giriş Ekranına Dön</a>
+        </div>
+    </div>
+
+</div>
+
+<script src="app.js"></script>
+
+<script>
+    // Formlar arası geçişi sağlayan script
+    function toggleForm(formId) {
+        // Tüm form kutularını gizle
+        document.querySelectorAll('.form-box').forEach(f => f.classList.remove('active'));
+        // İstenilen formu göster
+        document.getElementById(formId).classList.add('active');
+
+        // Eğer giriş ekranına dönülürse Forgot formunu sıfırla (Step 1'e geri getir)
+        if(formId === 'form-login') {
+            document.getElementById("forgot-step-1").style.display = "block";
+            document.getElementById("forgot-step-2").style.display = "none";
+        }
+    }
+</script>
+
+<script>
+    // Global API adresi
+    // Eğer app.js içinde zaten tanımlıysa buraya tekrar yazmana gerek yok.
+    // Tanımlı değilse şu satırın başındaki yorumu kaldır:
+    // const API_BASE = "http://localhost:8080/api";
+
+    // 1. ADIM: SMS Kodu İste
+    async function sendResetCode() {
+        console.log("sendResetCode fonksiyonu tetiklendi!"); // Test için log
+
+        const telefonInput = document.getElementById("forgotPhone");
+
+        if (!telefonInput) {
+            console.error("HATA: HTML'de 'forgotPhone' id'li input bulunamadı!");
+            return;
+        }
+
+        const telefon = telefonInput.value;
+
+        if (!telefon) {
+            Swal.fire('Uyarı', 'Lütfen telefon numaranızı giriniz.', 'warning');
+            return;
+        }
+
+        try {
+            const params = new URLSearchParams();
+            params.append('telefon', telefon);
+
+            // Fetch isteği
+            // NOT: Eğer API_BASE değişkeni yok hatası verirse buraya direkt "http://localhost:8080/api" yaz.
+            const res = await fetch(`http://localhost:8080/api/auth/forgot-password?` + params.toString(), {
+                method: 'POST'
+            });
+
+            const message = await res.text();
+
+            if (res.ok) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Kod Gönderildi! 📩',
+                    text: 'Lütfen telefonunuzu (ve konsolu) kontrol edin.',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+                // Ekran değiştir
+                document.getElementById("forgot-step-1").style.display = "none";
+                document.getElementById("forgot-step-2").style.display = "block";
+            } else {
+                Swal.fire('Hata', message, 'error');
+            }
+        } catch (error) {
+            console.error(error);
+            Swal.fire('Hata', 'Sunucuya ulaşılamadı. (F12 Konsola bak)', 'error');
+        }
+    }
+
+    // 2. ADIM: Yeni Şifreyi Kaydet
+    async function finishPasswordReset() {
+        const data = {
+            telefon: document.getElementById("forgotPhone").value,
+            kod: document.getElementById("forgotCode").value,
+            yeniSifre: document.getElementById("newPassword").value
+        };
+
+        if (!data.kod || !data.yeniSifre) {
+            Swal.fire('Uyarı', 'Lütfen kod ve yeni şifreyi giriniz.', 'warning');
+            return;
+        }
+
+        try {
+            const res = await fetch(`http://localhost:8080/api/auth/reset-password`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+
+            const message = await res.text();
+
+            if (res.ok) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Başarılı! 🎉',
+                    text: 'Şifreniz değiştirildi. Giriş yapabilirsiniz.',
+                    confirmButtonText: 'Tamam'
+                }).then(() => {
+                    // Formu temizle ve Login ekranına dön
+                    document.getElementById("forgot-step-1").style.display = "block";
+                    document.getElementById("forgot-step-2").style.display = "none";
+                    document.getElementById("forgotPhone").value = "";
+                    document.getElementById("forgotCode").value = "";
+                    document.getElementById("newPassword").value = "";
+
+                    // toggleForm fonksiyonu app.js içindeyse çalışır, değilse buraya kopyalamak gerekir.
+                    if (typeof toggleForm === "function") {
+                        toggleForm('form-login');
+                    } else {
+                        location.reload(); // Fonksiyon yoksa sayfayı yenile
+                    }
+                });
+            } else {
+                Swal.fire('Hata', message, 'error');
+            }
+        } catch (error) {
+            console.error(error);
+            Swal.fire('Hata', 'İşlem sırasında hata oluştu.', 'error');
+        }
+    }
+</script>
+
 </body>
 </html>

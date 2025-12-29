@@ -10,6 +10,6 @@ import java.util.List;
 public interface EmanetRepository extends JpaRepository<Emanet,Integer> {
     List<Emanet> findAllByUye(Uye uye);
 
-    boolean existsByUyeAndKitapAndGercekTeslimTarihiIsNull(Uye uye, Kitap kitap);
+    boolean existsByUyeAndKitapAndGercekTeslimTarihiIsNull(Uye uye, Kitap kitap);//aynı kitaptan fazla ödünç almamızı engeller
 }
 

@@ -19,7 +19,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     private final UyeRepository uyeRepository;
     private final GorevliRepository gorevliRepository;
 
-    // Constructor Injection (Bağımlılıkların enjekte edilmesi)
+
     public CustomUserDetailsService(UyeRepository uyeRepository, GorevliRepository gorevliRepository) {
         this.uyeRepository = uyeRepository;
         this.gorevliRepository = gorevliRepository;
@@ -28,12 +28,11 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String eposta) throws UsernameNotFoundException {
 
-        // 1. ADIM: Görevli tablosunda bu e-posta var mı?
+        //Görevli tablosunda bu e-posta arar
         var gorevliOptional = gorevliRepository.findByEposta(eposta);
         if (gorevliOptional.isPresent()) {
             Gorevli gorevli = gorevliOptional.get();
 
-            // Veritabanında "LIBRARIAN" tuttuğun için Spring Security standartlarına (ROLE_) çeviriyoruz
             String yetki = "ROLE_" + gorevli.getRol().toUpperCase();
 
             return User.builder()
@@ -43,12 +42,11 @@ public class CustomUserDetailsService implements UserDetailsService {
                     .build();
         }
 
-        // 2. ADIM: Görevli değilse, Üye tablosunda bu e-posta var mı?
+        // Görevli değilse, Üye tablosunda bu e-posta arar
         var uyeOptional = uyeRepository.findByEposta(eposta);
         if (uyeOptional.isPresent()) {
             Uye uye = uyeOptional.get();
 
-            // Veritabanında "MEMBER" tuttuğun için "ROLE_MEMBER" yapıyoruz
             String yetki = "ROLE_" + uye.getRol().toUpperCase();
 
             return User.builder()
@@ -58,7 +56,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                     .build();
         }
 
-        // 3. ADIM: Hiçbir tabloda yoksa giriş reddedilir
+        //Hiçbir tabloda yoksa giriş reddedilir
         throw new UsernameNotFoundException("Kullanıcı bulunamadı: " + eposta);
     }
 }

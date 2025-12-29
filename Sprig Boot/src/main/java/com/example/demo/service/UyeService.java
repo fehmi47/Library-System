@@ -1,30 +1,45 @@
 package com.example.demo.service;
 
 
-import com.example.demo.entity.Kitap;
+
 import com.example.demo.entity.Uye;
 import com.example.demo.repository.UyeRepository;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+
 
 @Service
 public class UyeService {
     private final UyeRepository uyeRepository;
     private final PasswordEncoder passwordEncoder;
 
+
     public UyeService(UyeRepository uyeRepository, PasswordEncoder passwordEncoder) {
         this.uyeRepository = uyeRepository;
         this.passwordEncoder = passwordEncoder;
+
     }
 
     public List<Uye> tumUyeleriGoster(){
         return uyeRepository.findAll();
     }
 
-    public Uye uyeKaydet(Uye uye){
+    public Uye uyeKaydet(Uye uye) {
+
+        if (uyeRepository.existsByEposta(uye.getEposta())) {
+            throw new RuntimeException("Bu e-posta adresi ile zaten bir kayıt mevcut!");
+        }
+        if (uye.getSifre() == null || uye.getSifre().isEmpty()) {
+            throw new RuntimeException("Şifre boş olamaz!");
+        }
+        if (uye.getRol() == null || uye.getRol().isEmpty()) {
+            uye.setRol("MEMBER");
+        }
         uye.setSifre(passwordEncoder.encode(uye.getSifre()));
+
         return uyeRepository.save(uye);
     }
 
@@ -52,4 +67,5 @@ public class UyeService {
 
         return uyeRepository.save(mevcutUye);
     }
+
 }

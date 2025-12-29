@@ -7,4 +7,6 @@ import java.util.Optional;
 public interface  UyeRepository extends JpaRepository<Uye,Integer> {
 //save(uye),findById(id),findAll(),delete(uye) burada tanımlanmıştır Jpa sayesinde
    Optional<Uye> findByEposta(String email);
+   boolean existsByEposta(String email);
+   Optional<Uye> findByTelefonNo(String telefonNo);
 }

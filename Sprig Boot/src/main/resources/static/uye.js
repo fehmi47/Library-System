@@ -1,309 +1,256 @@
 /**
  * Kütüphane Yönetim Sistemi - Üye Paneli (uye.js)
- * Tüm fonksiyonlar backend ile uyumlu hale getirilmiştir.
+ * SADELEŞTİRİLMİŞ & GÜÇLENDİRİLMİŞ VERSİYON
  */
 
 const API_BASE = "/api";
-const getAuth = () => sessionStorage.getItem("auth");
+// Auth bilgisini al (Yoksa null döner)
+const getAuth = () => sessionStorage.getItem("auth") || localStorage.getItem("auth");
+const getEl = (id) => document.getElementById(id); // Kısayol
+
+// ============================================================
+// 1. MERKEZİ YARDIMCI FONKSİYONLAR
+// ============================================================
+
+// [YENİ] GENEL İSTEK YÖNETİCİSİ (Fetch Wrapper)
+async function safeRequest(endpoint, method = 'GET', body = null) {
+    try {
+        const options = {
+            method: method,
+            headers: { 'Authorization': getAuth(), 'Content-Type': 'application/json' }
+        };
+        if (body) options.body = JSON.stringify(body);
+
+        const res = await fetch(`${API_BASE}${endpoint}`, options);
+        return res;
+    } catch (e) {
+        console.error(`İstek hatası (${endpoint}):`, e);
+        return null;
+    }
+}
+
+// [YENİ] GENEL AKSİYON YÖNETİCİSİ (Ödünç, İade, Ödeme)
+async function executeAction(endpoint, method, body, confirmMsg, successMsg, refreshCallbacks = []) {
+    if (!confirm(confirmMsg)) return;
+
+    const res = await safeRequest(endpoint, method, body);
+
+    if (res && res.ok) {
+        alert(successMsg || "İşlem başarılı!");
+        // İlgili panelleri yenile (Örn: Hem tabloyu hem özeti güncelle)
+        refreshCallbacks.forEach(cb => { if (typeof cb === 'function') cb(); });
+    } else {
+        const err = res ? await res.text() : "Bağlantı hatası";
+        alert("❌ İşlem başarısız: " + err);
+    }
+}
 
 // --- SAYFA YÜKLENDİĞİNDE ---
 document.addEventListener("DOMContentLoaded", () => {
-    // 1. Giriş kontrolü
     if (!getAuth()) {
         window.location.href = "index.html";
         return;
     }
-
-    // 2. Özet verileri yükle
     loadOzet();
-
-    // 3. Varsayılan olarak özet panelini aç
     showPanel('panel-ozet');
 });
 
-// --- PANEL GEÇİŞ YÖNETİMİ ---
+// --- PANEL GEÇİŞ ---
 window.showPanel = function(panelId) {
-    // Tüm panelleri gizle
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.menu li').forEach(li => li.classList.remove('active'));
 
-    // İstenen paneli aç
-    const targetPanel = document.getElementById(panelId);
-    if(targetPanel) targetPanel.classList.add('active');
+    const targetPanel = getEl(panelId);
+    if (targetPanel) targetPanel.classList.add('active');
 
-    // Menüdeki butonu aktif yap
     const btnId = panelId.replace('panel-', 'btn-');
-    const targetBtn = document.getElementById(btnId);
-    if(targetBtn) targetBtn.classList.add('active');
+    const targetBtn = getEl(btnId);
+    if (targetBtn) targetBtn.classList.add('active');
 
-    // Panelle ilgili verileri yükle
+    // Verileri Yükle
     if (panelId === 'panel-kitaplar') loadKitaplar();
     if (panelId === 'panel-emanetler') loadEmanetler();
     if (panelId === 'panel-cezalar') loadCezalar();
     if (panelId === 'panel-ozet') loadOzet();
 }
 
-// --- ÇIKIŞ YAP ---
+// --- ÇIKIŞ ---
 window.logout = function() {
-    if(confirm("Çıkış yapmak istediğinize emin misiniz?")) {
+    if (confirm("Çıkış yapmak istediğinize emin misiniz?")) {
         sessionStorage.clear();
+        localStorage.clear();
         window.location.href = "index.html";
     }
 }
 
 // ============================================================
-// 1. GENEL BAKIŞ (ÖZET) İŞLEMLERİ
+// 2. ÖZET EKRANI (Promise.all ile Hızlandırıldı)
 // ============================================================
 async function loadOzet() {
-    console.log("Özet veriler yükleniyor...");
+    // Tüm istekleri paralel atıyoruz, birbirini beklemiyorlar -> Daha Hızlı
+    const [resKitap, resEmanet, resCeza] = await Promise.allSettled([
+        safeRequest('/kitap/liste'),
+        safeRequest('/emanet/benim-emanetlerim'),
+        safeRequest('/ceza/benim-cezalar')
+    ]);
 
-    // A) KİTAP SAYISI
-    try {
-        const res = await fetch(`${API_BASE}/kitap/liste`, { headers: { 'Authorization': getAuth() } });
-        if (res.ok) {
-            const data = await res.json();
-            if (document.getElementById("ozet-kitap"))
-                document.getElementById("ozet-kitap").innerText = data.length;
-        }
-    } catch (e) { console.error("Kitap sayısı hatası:", e); }
+    // 1. Kitap Sayısı
+    if (resKitap.status === 'fulfilled' && resKitap.value?.ok) {
+        const data = await resKitap.value.json();
+        const el = getEl("ozet-kitap");
+        if (el) el.innerText = data.length;
+    }
 
-    // B) AKTİF EMANET SAYISI
-    try {
-        const res = await fetch(`${API_BASE}/emanet/benim-emanetlerim`, { headers: { 'Authorization': getAuth() } });
-        if (res.ok) {
-            const data = await res.json();
-            const aktifSayi = data.filter(e => e.gercekTeslimTarihi === null).length;
-            if (document.getElementById("ozet-emanet"))
-                document.getElementById("ozet-emanet").innerText = aktifSayi;
-        }
-    } catch (e) { console.error("Emanet sayısı hatası:", e); }
+    // 2. Aktif Emanet
+    if (resEmanet.status === 'fulfilled' && resEmanet.value?.ok) {
+        const data = await resEmanet.value.json();
+        const aktif = data.filter(e => e.gercekTeslimTarihi === null).length;
+        const el = getEl("ozet-emanet");
+        if (el) el.innerText = aktif;
+    }
 
-    // C) CEZA BORCU
-    try {
-        const res = await fetch(`${API_BASE}/ceza/benim-cezalar`, { headers: { 'Authorization': getAuth() } });
-        if (res.ok) {
-            const data = await res.json();
-            let toplamBorc = 0;
-            data.forEach(c => {
-                const durum = c.durum ? c.durum.toString().toUpperCase() : "";
-                // Eğer durum ODENDI değilse borcu topla
-                if (durum !== 'ODENDI' && c.odendiMi !== true) {
-                    toplamBorc += (c.tutar || c.cezaMiktari || 0);
-                }
-            });
-            if (document.getElementById("ozet-ceza"))
-                document.getElementById("ozet-ceza").innerText = toplamBorc + " TL";
-        }
-    } catch (e) { console.error("Ceza bilgisi hatası:", e); }
+    // 3. Ceza Borcu
+    if (resCeza.status === 'fulfilled' && resCeza.value?.ok) {
+        const data = await resCeza.value.json();
+        let toplam = 0;
+        data.forEach(c => {
+            const durum = c.durum ? c.durum.toString().toUpperCase() : "";
+            if (durum !== 'ODENDI' && c.odendiMi !== true) {
+                toplam += (c.tutar || c.cezaMiktari || 0);
+            }
+        });
+        const el = getEl("ozet-ceza");
+        if (el) el.innerText = toplam + " TL";
+    }
 }
 
 // ============================================================
-// 2. KİTAP İŞLEMLERİ (LİSTELEME & ÖDÜNÇ ALMA)
+// 3. KİTAP İŞLEMLERİ
 // ============================================================
 async function loadKitaplar() {
     const tbody = document.querySelector("#table-kitaplar tbody");
+    if (!tbody) return;
     tbody.innerHTML = "<tr><td colspan='5'>Yükleniyor...</td></tr>";
 
-    try {
-        const res = await fetch(`${API_BASE}/kitap/liste`, { headers: { 'Authorization': getAuth() } });
+    const res = await safeRequest('/kitap/liste');
+    if (res && res.ok) {
         const data = await res.json();
-
-        if (data.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='5'>Kütüphanede kitap bulunmuyor.</td></tr>";
-            return;
-        }
+        if (!data.length) { tbody.innerHTML = "<tr><td colspan='5'>Kütüphanede kitap yok.</td></tr>"; return; }
 
         tbody.innerHTML = data.map(k => `
             <tr>
                 <td><b>${k.ad}</b></td>
                 <td>${k.yazar ? k.yazar.ad + ' ' + k.yazar.soyad : '-'}</td>
                 <td><span class="badge bg-info">${k.kategori ? k.kategori.ad : 'Genel'}</span></td>
-                <td>
-                    ${k.adet > 0
-                        ? `<span class="badge bg-success">${k.adet} Adet</span>`
-                        : `<span class="badge bg-danger">Tükendi</span>`}
-                </td>
-                <td>
-                    <button class="btn btn-primary" onclick="oduncAl(${k.id})" ${k.adet <= 0 ? 'disabled' : ''}>
-                        Ödünç Al
-                    </button>
-                </td>
-            </tr>
-        `).join('');
-    } catch (e) {
-        tbody.innerHTML = "<tr><td colspan='5' style='color:red'>Kitaplar yüklenemedi.</td></tr>";
+                <td>${k.adet > 0 ? `<span class="badge bg-success">${k.adet} Adet</span>` : `<span class="badge bg-danger">Tükendi</span>`}</td>
+                <td><button class="btn btn-primary" onclick="oduncAl(${k.id})" ${k.adet <= 0 ? 'disabled' : ''}>Ödünç Al</button></td>
+            </tr>`).join('');
+    } else {
+        tbody.innerHTML = "<tr><td colspan='5' style='color:red'>Veri yüklenemedi.</td></tr>";
     }
 }
 
-window.oduncAl = async function(kitapId) {
-    if(!confirm("Bu kitabı ödünç almak istiyor musunuz?")) return;
-
-    try {
-        // Backend'de "oduncVer" metodunda üye ID'sini token'dan buluyoruz, sadece kitapId yeterli
-        const res = await fetch(`${API_BASE}/emanet/odunc-al`, {
-            method: 'POST',
-            headers: { 'Authorization': getAuth(), 'Content-Type': 'application/json' },
-            body: JSON.stringify({ kitapId: kitapId })
-        });
-
-        if (res.ok) {
-            alert("✅ Kitap başarıyla ödünç alındı!");
-            loadKitaplar(); // Stok güncellensin
-            loadOzet();     // Sayaç artsın
-        } else {
-            alert("❌ Hata: " + await res.text());
-        }
-    } catch (e) {
-        alert("Sunucu hatası: " + e);
-    }
+window.oduncAl = function(kitapId) {
+    executeAction(
+        '/emanet/odunc-al',
+        'POST',
+        { kitapId: kitapId },
+        "Bu kitabı ödünç almak istiyor musunuz?",
+        "✅ Kitap ödünç alındı!",
+        [loadKitaplar, loadOzet] // Başarılı olursa bu fonksiyonları çalıştır
+    );
 }
 
 // ============================================================
-// 3. EMANET İŞLEMLERİ (LİSTELEME & İADE ETME)
+// 4. EMANET İŞLEMLERİ
 // ============================================================
 async function loadEmanetler() {
     const tbody = document.querySelector("#table-emanetler tbody");
-    // HTML'de 5 sütun ayarladık, colspan 5 olmalı
+    if (!tbody) return;
     tbody.innerHTML = "<tr><td colspan='5'>Yükleniyor...</td></tr>";
 
-    try {
-        const res = await fetch(`${API_BASE}/emanet/benim-emanetlerim`, {
-            headers: { 'Authorization': getAuth() }
-        });
-
-        let data = [];
-        if(res.ok) data = await res.json();
-
-        if (data.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='5'>Henüz ödünç aldığınız kitap yok.</td></tr>";
-            return;
-        }
+    const res = await safeRequest('/emanet/benim-emanetlerim');
+    if (res && res.ok) {
+        const data = await res.json();
+        if (!data.length) { tbody.innerHTML = "<tr><td colspan='5'>Emanet kaydı yok.</td></tr>"; return; }
 
         tbody.innerHTML = data.map(e => {
-            const iadeEdilmedi = (e.gercekTeslimTarihi === null);
-            return `
-            <tr>
+            const aktif = (e.gercekTeslimTarihi === null);
+            return `<tr>
                 <td>${e.kitap ? e.kitap.ad : 'Bilinmiyor'}</td>
                 <td>${e.emanetTarihi || '-'}</td>
                 <td>${e.beklenenTeslimTarihi || '-'}</td>
-                <td>
-                    ${!iadeEdilmedi
-                        ? '<span class="badge bg-success">İade Edildi</span>'
-                        : '<span class="badge bg-warning">Okunuyor</span>'}
-                </td>
-                <td>
-                    ${iadeEdilmedi
-                        ? `<button class="btn btn-sm" style="background:#e67e22; color:white" onclick="kitapIadeEt(${e.id})">📚 İade Et</button>`
-                        : '-'}
-                </td>
-            </tr>
-        `}).join('');
+                <td>${!aktif ? '<span class="badge bg-success">İade Edildi</span>' : '<span class="badge bg-warning">Okunuyor</span>'}</td>
+                <td>${aktif ? `<button class="btn btn-sm" style="background:#e67e22; color:white" onclick="kitapIadeEt(${e.id})">📚 İade Et</button>` : '-'}</td>
+            </tr>`;
+        }).join('');
 
-        // Özeti de güncelle
-        const aktifSayi = data.filter(e => e.gercekTeslimTarihi === null).length;
-        if(document.getElementById("ozet-emanet"))
-            document.getElementById("ozet-emanet").innerText = aktifSayi;
+        // Tabloyu yüklemişken özeti de güncelle (ekstra fetch yapmadan)
+        const el = getEl("ozet-emanet");
+        if(el) el.innerText = data.filter(e => e.gercekTeslimTarihi === null).length;
 
-    } catch (e) {
-        console.error(e);
-        tbody.innerHTML = "<tr><td colspan='5' style='color:red'>Veriler alınamadı.</td></tr>";
+    } else {
+        tbody.innerHTML = "<tr><td colspan='5' style='color:red'>Veri yüklenemedi.</td></tr>";
     }
 }
 
-window.kitapIadeEt = async function(emanetId) {
-    if(!confirm("Kitabı iade etmek istediğinize emin misiniz?")) return;
-
-    try {
-        // Mevcut endpoint'i kullanıyoruz (Service katmanında güvenlik kontrolü eklemiştik)
-        const res = await fetch(`${API_BASE}/emanet/iade-et/${emanetId}`, {
-            method: 'PUT',
-            headers: { 'Authorization': getAuth() }
-        });
-
-        if (res.ok) {
-            const mesaj = await res.text();
-            alert("✅ " + (mesaj || "İade işlemi başarılı."));
-            loadEmanetler(); // Listeyi yenile
-            loadOzet();      // Sayacı düşür
-            // Ceza çıkmış olabilir, ceza listesini de yenilemek iyi olur
-            loadCezalar();
-        } else {
-            alert("❌ Hata: " + await res.text());
-        }
-    } catch (e) {
-        alert("Sunucu hatası: " + e);
-    }
+window.kitapIadeEt = function(id) {
+    executeAction(
+        `/emanet/iade-et/${id}`,
+        'PUT',
+        null,
+        "Kitabı iade etmek istiyor musunuz?",
+        "✅ İade işlemi başarılı.",
+        [loadEmanetler, loadOzet, loadCezalar]
+    );
 }
 
 // ============================================================
-// 4. CEZA İŞLEMLERİ (LİSTELEME & ÖDEME)
+// 5. CEZA İŞLEMLERİ
 // ============================================================
 async function loadCezalar() {
     const tbody = document.querySelector("#table-cezalar tbody");
+    if (!tbody) return;
     tbody.innerHTML = "<tr><td colspan='4'>Yükleniyor...</td></tr>";
 
-    try {
-        const res = await fetch(`${API_BASE}/ceza/benim-cezalar`, {
-            headers: { 'Authorization': getAuth() }
-        });
-
-        let data = [];
-        if(res.ok) data = await res.json();
-
-        if (data.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='4'>Ceza kaydınız bulunmuyor. Teşekkürler! 🎉</td></tr>";
-            return;
-        }
+    const res = await safeRequest('/ceza/benim-cezalar');
+    if (res && res.ok) {
+        const data = await res.json();
+        if (!data.length) { tbody.innerHTML = "<tr><td colspan='4'>Cezanız yok. 🎉</td></tr>"; return; }
 
         tbody.innerHTML = data.map(c => {
-            const miktar = c.tutar || c.cezaMiktari || 0;
-            const durumStr = c.durum ? c.durum.toString().toUpperCase() : "";
-            const isPaid = (durumStr === 'ODENDI' || durumStr === 'ÖDENDİ' || c.odendiMi === true);
+            const durum = c.durum ? c.durum.toString().toUpperCase() : "";
+            const isPaid = (durum === 'ODENDI' || durum === 'ÖDENDİ' || c.odendiMi === true);
+            const kitap = c.emanet?.kitap?.ad || c.kitap?.ad || '-';
 
-            const kitapAdi = (c.emanet && c.emanet.kitap) ? c.emanet.kitap.ad :
-                             (c.kitap ? c.kitap.ad : '-');
+            return `<tr>
+                <td>${kitap}</td>
+                <td>${c.tutar || c.cezaMiktari || 0} TL</td>
+                <td>${isPaid ? '<span class="badge bg-success">Ödendi</span>' : '<span class="badge bg-danger">Ödenmedi</span>'}</td>
+                <td>${!isPaid ? `<button class="btn" style="background:#27ae60;" onclick="cezaOde(${c.id})">💸 Öde</button>` : '<i class="fas fa-check" style="color:green"></i>'}</td>
+            </tr>`;
+        }).join('');
 
-            return `
-            <tr>
-                <td>${kitapAdi}</td>
-                <td>${miktar} TL</td>
-                <td>
-                    ${isPaid
-                        ? '<span class="badge bg-success">Ödendi</span>'
-                        : '<span class="badge bg-danger">Ödenmedi</span>'}
-                </td>
-                <td>
-                    ${!isPaid
-                        ? `<button class="btn" style="background:#27ae60;" onclick="cezaOde(${c.id})">💸 Öde</button>`
-                        : '<i class="fas fa-check" style="color:green"></i>'}
-                </td>
-            </tr>
-        `}).join('');
+        // Özeti güncelle (Ekstra fetch yapmadan)
+        let toplam = data.reduce((acc, c) => {
+            const d = c.durum ? c.durum.toString().toUpperCase() : "";
+            return (d !== 'ODENDI' && !c.odendiMi) ? acc + (c.tutar || c.cezaMiktari || 0) : acc;
+        }, 0);
+        const el = getEl("ozet-ceza");
+        if(el) el.innerText = toplam + " TL";
 
-        loadOzet(); // Toplam borcu güncelle
-
-    } catch (e) {
-        tbody.innerHTML = "<tr><td colspan='4' style='color:red'>Cezalar yüklenemedi.</td></tr>";
+    } else {
+        tbody.innerHTML = "<tr><td colspan='4' style='color:red'>Veri yüklenemedi.</td></tr>";
     }
 }
 
-window.cezaOde = async function(id) {
-    if(!confirm("Bu cezayı ödemek istiyor musunuz?")) return;
-
-    try {
-        const res = await fetch(`${API_BASE}/ceza/ode/${id}`, {
-            method: 'POST',
-            headers: { 'Authorization': getAuth() }
-        });
-
-        if (res.ok) {
-            alert("✅ Ödeme başarıyla gerçekleşti!");
-            loadCezalar(); // Tabloyu yenile
-            loadOzet();    // Karttaki borcu sıfırla
-        } else {
-            alert("❌ İşlem başarısız: " + await res.text());
-        }
-    } catch (e) {
-        alert("Hata: " + e.message);
-    }
+window.cezaOde = function(id) {
+    executeAction(
+        `/ceza/ode/${id}`,
+        'POST',
+        null,
+        "Ödeme yapmak istiyor musunuz?",
+        "✅ Ödeme Başarılı!",
+        [loadCezalar, loadOzet]
+    );
 }
